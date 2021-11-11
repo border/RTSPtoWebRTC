@@ -8,9 +8,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/deepch/vdk/av"
+	"github.com/border/vdk/av"
 
-	webrtc "github.com/deepch/vdk/format/webrtcv3"
+	webrtc "github.com/border/vdk/format/webrtcv3"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,7 +23,7 @@ func serveHTTP() {
 
 	router := gin.Default()
 	router.Use(CORSMiddleware())
-	
+
 	if _, err := os.Stat("./web"); !os.IsNotExist(err) {
 		router.LoadHTMLGlob("web/templates/*")
 		router.GET("/", HTTPAPIServerIndex)
@@ -34,6 +34,9 @@ func serveHTTP() {
 	router.POST("/stream", HTTPAPIServerStreamWebRTC2)
 
 	router.StaticFS("/static", http.Dir("web/static"))
+
+	router.StaticFS("/play", http.Dir("play"))
+
 	err := router.Run(Config.Server.HTTPPort)
 	if err != nil {
 		log.Fatalln("Start HTTP Server error", err)
@@ -177,7 +180,7 @@ type Response struct {
 }
 
 type ResponseError struct {
-	Error  string   `json:"error"`
+	Error string `json:"error"`
 }
 
 func HTTPAPIServerStreamWebRTC2(c *gin.Context) {

@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/deepch/vdk/format/rtspv2"
+	"github.com/border/vdk/format/rtspv2"
 )
 
 var (
@@ -41,7 +41,7 @@ func RTSPWorker(name, url string, OnDemand, DisableAudio, Debug bool) error {
 	keyTest := time.NewTimer(20 * time.Second)
 	clientTest := time.NewTimer(20 * time.Second)
 	//add next TimeOut
-	RTSPClient, err := rtspv2.Dial(rtspv2.RTSPClientOptions{URL: url, DisableAudio: DisableAudio, DialTimeout: 3 * time.Second, ReadWriteTimeout: 3 * time.Second, Debug: Debug})
+	RTSPClient, err := rtspv2.Dial(rtspv2.RTSPClientOptions{URL: url, DisableAudio: DisableAudio, DialTimeout: 10 * time.Second, ReadWriteTimeout: 10 * time.Second, Debug: Debug})
 	if err != nil {
 		return err
 	}

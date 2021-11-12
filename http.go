@@ -32,6 +32,8 @@ func serveHTTP() {
 	router.POST("/stream/receiver/:uuid", HTTPAPIServerStreamWebRTC)
 	router.GET("/stream/codec/:uuid", HTTPAPIServerStreamCodec)
 	router.POST("/stream/playrtc", HTTPAPIServerStreamWebRTC2)
+	router.POST("/stream/add", HTTPAPIServerStreamAdd)
+	router.POST("/stream/clean", HTTPAPIServerStreamClean)
 
 	router.StaticFS("/static", http.Dir("web/static"))
 
@@ -188,6 +190,62 @@ type PlayWebRTC struct {
 	CameraSn  string `json:"camerasn"`
 	Clientip  string `json:"clientip"`
 	Sdp       string `json:"sdp"` // Base64 encoded
+}
+
+func HTTPAPIServerStreamAdd(c *gin.Context) {
+
+	play := PlayWebRTC{}
+
+	c.BindJSON(&play)
+
+	camerasn := play.CameraSn
+	url := play.StreamUrl
+	sdp := play.Sdp
+
+	if camerasn == "" {
+		camerasn = url
+	}
+
+	if _, ok := Config.Streams[camerasn]; !ok {
+		Config.Streams[camerasn] = StreamST{
+			URL:          url,
+			OnDemand:     true,
+			DisableAudio: true,
+			Cl:           make(map[string]viewer),
+		}
+	}
+
+	log.Printf("camerasn: %s, url: %s, sdp: %s\n", camerasn, url, sdp)
+
+	Config.RunIFNotRun(camerasn)
+
+	codecs := Config.coGe(camerasn)
+	if codecs == nil {
+		log.Println("Stream Codec Not Found")
+		c.JSON(500, ResponseError{Error: Config.LastError.Error()})
+		return
+	}
+
+	b, err := json.Marshal(play)
+	if err == nil {
+		_, err = c.Writer.Write(b)
+		if err != nil {
+			log.Println("Write Codec Info error", err)
+			return
+		}
+	}
+}
+
+func HTTPAPIServerStreamClean(c *gin.Context) {
+	keys := Config.coClean()
+	b, err := json.Marshal(keys)
+	if err == nil {
+		_, err = c.Writer.Write(b)
+		if err != nil {
+			log.Println("Write Codec Info error", err)
+			return
+		}
+	}
 }
 
 func HTTPAPIServerStreamWebRTC2(c *gin.Context) {

@@ -10,12 +10,7 @@
       "on_demand": true,
       "disable_audio": true,
       "debug": true,
-      "url": "rtsp://219.135.214.196:554/openUrl/efwPSeY"
-    },
-    "MICRO": {
-      "on_demand": true,
-      "disable_audio": true,
-      "url": "rtsp://219.135.214.196:554/openUrl/efH3qVi"
+      "url": "rtsp://219.135.214.196:554/openUrl/x6eWb5e"
     }
   }
 }

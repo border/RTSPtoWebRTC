@@ -171,6 +171,23 @@ func (element *ConfigST) coAd(suuid string, codecs []av.CodecData) {
 	element.Streams[suuid] = t
 }
 
+func (element *ConfigST) coClean() []string {
+	element.mutex.Lock()
+	defer element.mutex.Unlock()
+	var key []string
+	for k, v := range element.Streams {
+		if len(v.Cl) > 0 {
+			continue
+		}
+		key = append(key, k)
+	}
+	for _, k := range key {
+		log.Printf("coClean Delete Key: %s\n", k)
+		delete(element.Streams, k)
+	}
+	return key
+}
+
 func (element *ConfigST) coGe(suuid string) []av.CodecData {
 	for i := 0; i < 100; i++ {
 		element.mutex.RLock()

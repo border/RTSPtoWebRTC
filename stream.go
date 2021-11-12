@@ -38,8 +38,8 @@ func RTSPWorkerLoop(name, url string, OnDemand, DisableAudio, Debug bool) {
 	}
 }
 func RTSPWorker(name, url string, OnDemand, DisableAudio, Debug bool) error {
-	keyTest := time.NewTimer(20 * time.Second)
-	clientTest := time.NewTimer(20 * time.Second)
+	keyTest := time.NewTimer(30 * time.Second)
+	clientTest := time.NewTimer(30 * time.Second)
 	//add next TimeOut
 	RTSPClient, err := rtspv2.Dial(rtspv2.RTSPClientOptions{URL: url, DisableAudio: DisableAudio, DialTimeout: 10 * time.Second, ReadWriteTimeout: 10 * time.Second, Debug: Debug})
 	if err != nil {
@@ -60,7 +60,7 @@ func RTSPWorker(name, url string, OnDemand, DisableAudio, Debug bool) error {
 				if !Config.HasViewer(name) {
 					return ErrorStreamExitNoViewer
 				} else {
-					clientTest.Reset(20 * time.Second)
+					clientTest.Reset(30 * time.Second)
 				}
 			}
 		case <-keyTest.C:
@@ -74,7 +74,7 @@ func RTSPWorker(name, url string, OnDemand, DisableAudio, Debug bool) error {
 			}
 		case packetAV := <-RTSPClient.OutgoingPacketQueue:
 			if AudioOnly || packetAV.IsKeyFrame {
-				keyTest.Reset(20 * time.Second)
+				keyTest.Reset(30 * time.Second)
 			}
 			Config.cast(name, *packetAV)
 		}

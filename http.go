@@ -329,7 +329,7 @@ func HTTPAPIServerStreamWebRTC2(c *gin.Context) {
 		for {
 			select {
 			case <-noVideo.C:
-				log.Println("noVideo")
+				log.Printf("noVideo %s\n", camerasn)
 				return
 			case pck := <-ch:
 				if pck.IsKeyFrame || AudioOnly {
@@ -341,7 +341,7 @@ func HTTPAPIServerStreamWebRTC2(c *gin.Context) {
 				}
 				err = muxerWebRTC.WritePacket(pck)
 				if err != nil {
-					log.Println("WritePacket", err)
+					log.Printf("WritePacket %s, %v \n", camerasn, err)
 					return
 				}
 			}

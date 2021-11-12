@@ -10,19 +10,12 @@
       "on_demand": true,
       "disable_audio": true,
       "debug": true,
-      "url": "rtsp://219.135.214.196:554/openUrl/cBvBTz2"
+      "url": "rtsp://219.135.214.196:554/openUrl/efwPSeY"
     },
     "MICRO": {
       "on_demand": true,
-      "url": "rtsp://akaimp.duckdns.org/live/ch00_0"
-    },
-    "PCM": {
-      "on_demand": true,
-      "url": "rtsp://admin:admin123@10.128.18.224/mpeg4"
-    },
-    "H264_PCMALAW": {
-      "on_demand": true,
-      "url": "rtsp://admin:admin123@10.128.18.224/mpeg4"
+      "disable_audio": true,
+      "url": "rtsp://219.135.214.196:554/openUrl/efH3qVi"
     }
   }
 }

@@ -10,8 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/border/vdk/codec/h264parser"
-
 	"github.com/border/vdk/av"
 )
 
@@ -46,6 +44,7 @@ type StreamST struct {
 	RunLock      bool   `json:"-"`
 	Codecs       []av.CodecData
 	Cl           map[string]viewer
+	UpdateTime   int64 `json:"updatetime"`
 }
 
 type viewer struct {
@@ -124,6 +123,7 @@ func loadConfig() *ConfigST {
 		}
 		for i, v := range tmp.Streams {
 			v.Cl = make(map[string]viewer)
+			v.UpdateTime = time.Now().Unix()
 			tmp.Streams[i] = v
 		}
 	} else {
@@ -167,6 +167,7 @@ func (element *ConfigST) coAd(suuid string, codecs []av.CodecData) {
 	defer element.mutex.Unlock()
 	t := element.Streams[suuid]
 	t.Codecs = codecs
+	t.UpdateTime = time.Now().Unix()
 	element.Streams[suuid] = t
 }
 
@@ -180,20 +181,20 @@ func (element *ConfigST) coGe(suuid string) []av.CodecData {
 		}
 		if tmp.Codecs != nil {
 			//TODO Delete test
-			for _, codec := range tmp.Codecs {
-				if codec.Type() == av.H264 {
-					codecVideo := codec.(h264parser.CodecData)
-					if codecVideo.SPS() != nil && codecVideo.PPS() != nil && len(codecVideo.SPS()) > 0 && len(codecVideo.PPS()) > 0 {
-						//ok
-						//log.Println("Ok Video Ready to play")
-					} else {
-						//video codec not ok
-						log.Println("Bad Video Codec SPS or PPS Wait")
-						time.Sleep(50 * time.Millisecond)
-						continue
-					}
-				}
-			}
+			// for _, codec := range tmp.Codecs {
+			// 	if codec.Type() == av.H264 {
+			// 		codecVideo := codec.(h264parser.CodecData)
+			// 		if codecVideo.SPS() != nil && codecVideo.PPS() != nil && len(codecVideo.SPS()) > 0 && len(codecVideo.PPS()) > 0 {
+			// 			//ok
+			// 			//log.Println("Ok Video Ready to play")
+			// 		} else {
+			// 			//video codec not ok
+			// 			log.Println("Bad Video Codec SPS or PPS Wait")
+			// 			time.Sleep(50 * time.Millisecond)
+			// 			continue
+			// 		}
+			// 	}
+			// }
 			return tmp.Codecs
 		}
 		time.Sleep(50 * time.Millisecond)
@@ -206,7 +207,13 @@ func (element *ConfigST) clAd(suuid string) (string, chan av.Packet) {
 	defer element.mutex.Unlock()
 	cuuid := pseudoUUID()
 	ch := make(chan av.Packet, 100)
-	element.Streams[suuid].Cl[cuuid] = viewer{c: ch}
+
+	if stream, ok := element.Streams[suuid]; ok {
+		element.Streams[suuid].Cl[cuuid] = viewer{c: ch}
+		stream.UpdateTime = time.Now().Unix()
+		element.Streams[suuid] = stream
+	}
+
 	return cuuid, ch
 }
 
@@ -226,7 +233,11 @@ func (element *ConfigST) list() (string, []string) {
 func (element *ConfigST) clDe(suuid, cuuid string) {
 	element.mutex.Lock()
 	defer element.mutex.Unlock()
-	delete(element.Streams[suuid].Cl, cuuid)
+	if stream, ok := element.Streams[suuid]; ok {
+		delete(stream.Cl, cuuid)
+		stream.UpdateTime = time.Now().Unix()
+		element.Streams[suuid] = stream
+	}
 }
 
 func pseudoUUID() (uuid string) {

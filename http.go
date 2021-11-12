@@ -31,7 +31,7 @@ func serveHTTP() {
 	}
 	router.POST("/stream/receiver/:uuid", HTTPAPIServerStreamWebRTC)
 	router.GET("/stream/codec/:uuid", HTTPAPIServerStreamCodec)
-	router.POST("/stream", HTTPAPIServerStreamWebRTC2)
+	router.POST("/stream/playrtc", HTTPAPIServerStreamWebRTC2)
 
 	router.StaticFS("/static", http.Dir("web/static"))
 
@@ -176,26 +176,48 @@ func CORSMiddleware() gin.HandlerFunc {
 
 type Response struct {
 	Tracks []string `json:"tracks"`
-	Sdp64  string   `json:"sdp64"`
+	Sdp    string   `json:"sdp"`
 }
 
 type ResponseError struct {
 	Error string `json:"error"`
 }
 
+type PlayWebRTC struct {
+	StreamUrl string `json:"streamurl"`
+	CameraSn  string `json:"camerasn"`
+	Clientip  string `json:"clientip"`
+	Sdp       string `json:"sdp"` // Base64 encoded
+}
+
 func HTTPAPIServerStreamWebRTC2(c *gin.Context) {
-	url := c.PostForm("url")
-	if _, ok := Config.Streams[url]; !ok {
-		Config.Streams[url] = StreamST{
-			URL:      url,
-			OnDemand: true,
-			Cl:       make(map[string]viewer),
+
+	play := PlayWebRTC{}
+
+	c.BindJSON(&play)
+
+	camerasn := play.CameraSn
+	url := play.StreamUrl
+	sdp := play.Sdp
+
+	if camerasn == "" {
+		camerasn = url
+	}
+
+	if _, ok := Config.Streams[camerasn]; !ok {
+		Config.Streams[camerasn] = StreamST{
+			URL:          url,
+			OnDemand:     true,
+			DisableAudio: true,
+			Cl:           make(map[string]viewer),
 		}
 	}
 
-	Config.RunIFNotRun(url)
+	log.Printf("camerasn: %s, url: %s, sdp: %s\n", camerasn, url, sdp)
 
-	codecs := Config.coGe(url)
+	Config.RunIFNotRun(camerasn)
+
+	codecs := Config.coGe(camerasn)
 	if codecs == nil {
 		log.Println("Stream Codec Not Found")
 		c.JSON(500, ResponseError{Error: Config.LastError.Error()})
@@ -210,8 +232,7 @@ func HTTPAPIServerStreamWebRTC2(c *gin.Context) {
 		},
 	)
 
-	sdp64 := c.PostForm("sdp64")
-	answer, err := muxerWebRTC.WriteHeader(codecs, sdp64)
+	answer, err := muxerWebRTC.WriteHeader(codecs, sdp)
 	if err != nil {
 		log.Println("Muxer WriteHeader", err)
 		c.JSON(500, ResponseError{Error: err.Error()})
@@ -219,7 +240,7 @@ func HTTPAPIServerStreamWebRTC2(c *gin.Context) {
 	}
 
 	response := Response{
-		Sdp64: answer,
+		Sdp: answer,
 	}
 
 	for _, codec := range codecs {
@@ -242,8 +263,8 @@ func HTTPAPIServerStreamWebRTC2(c *gin.Context) {
 	AudioOnly := len(codecs) == 1 && codecs[0].Type().IsAudio()
 
 	go func() {
-		cid, ch := Config.clAd(url)
-		defer Config.clDe(url, cid)
+		cid, ch := Config.clAd(camerasn)
+		defer Config.clDe(camerasn, cid)
 		defer muxerWebRTC.Close()
 		var videoStart bool
 		noVideo := time.NewTimer(10 * time.Second)
